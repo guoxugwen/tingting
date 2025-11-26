@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中文学习挑战 (Chinese Challenge)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 设置默认字体为 Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        /* 隐藏滚动条 */
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .reveal-text {
+            /* 初始状态隐藏 */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .revealed {
+            /* 倒计时结束后显示 */
+            opacity: 1;
+        }
+        /* 确保图片加载时的淡入效果 */
+        .image-hidden {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .image-shown {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="quiz-container" class="w-full max-w-lg bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-6">
+
+        <h1 class="text-3xl font-bold text-center text-red-600">
+            中文挑战 🍎
+        </h1>
+
+        <!-- Ting Ting's 专属标题 - 已更新为中文，并缩小设计 -->
+        <div class="text-center p-2 bg-red-100 rounded-lg border-2 border-red-400">
+            <p class="text-lg font-bold text-red-800">Ting Ting's Chinese Word Game</p>
+        </div>
+
+        <!-- Image Display Area (已调整大小) -->
+        <div class="relative rounded-lg overflow-hidden border-4 border-red-200 min-h-[250px] flex flex-col justify-center items-center">
+            
+            <!-- 图片区域 -->
+            <img id="fruit-image" class="w-full h-auto object-cover aspect-[16/9] rounded-md image-hidden" alt="Fruit for learning"
+                 src=""
+                 onerror="this.onerror=null; this.src='https://placehold.co/400x225/f0f0f0/333333?text=Image+Not+Found'">
+        </div>
+
+        <!-- Question and Countdown Area -->
+        <div class="text-center space-y-4">
+            <!-- 英文单词显示 (位于 What is this? 上方) -->
+            <div id="english-name-display" class="text-4xl font-extrabold text-red-600 transition-opacity duration-300">
+                <!-- English Name appears here first -->
+            </div>
+            
+            <!-- 问题提示 (已放大并添加中文) -->
+            <p id="question-prompt" class="text-4xl font-semibold text-gray-700">
+                What is this? | 这是什么？
+            </p>
+            
+            <!-- Countdown Indicator -->
+            <div id="countdown-bar" class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="countdown-progress" class="bg-red-500 h-2.5 rounded-full" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Answer Reveal Area -->
+        <div id="answer-section" class="reveal-text flex flex-col items-center p-4 bg-red-50 rounded-lg border border-red-300">
+            <p id="chinese-name" class="text-5xl font-extrabold text-red-700 leading-tight">
+                <!-- 中文名称 goes here -->
+            </p>
+            <p id="pinyin" class="text-2xl text-gray-600 mt-1">
+                <!-- pīn yīn goes here -->
+            </p>
+        </div>
+
+        <!-- Controls -->
+        <button id="next-button" class="w-full py-3 bg-red-600 text-white font-bold text-xl rounded-lg hover:bg-red-700 transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-red-300 disabled:bg-gray-400">
+            Next Fruit (下一个)
+        </button>
+
+    </div>
+
+    <script type="module">
+        // --- 教学数据 (从简单到困难) ---
+        const fruitsData = [
+            // TODO: 请将 'your_image_url_here' 替换为您自己的水果图片 URL，以获得最佳效果。
+            { en: "Apple", cn: "苹果", pinyin: "píng guǒ", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Banana", cn: "香蕉", pinyin: "xiāng jiāo", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Orange", cn: "橘子", pinyin: "jú zi", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Grape", cn: "葡萄", pinyin: "pú táo", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Kiwi", cn: "猕猴桃", pinyin: "mí hóu táo", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Pomegranate", cn: "石榴", pinyin: "shí liu", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" },
+            { en: "Dragon Fruit", cn: "火龙果", pinyin: "huǒ lóng guǒ", img: "https://placehold.co/400x225/f0f0f0/333333?text=Placeholder" }
+        ];
+
+        // --- DOM 元素获取 ---
+        const fruitImage = document.getElementById('fruit-image');
+        // 更新：使用新的英文单词显示元素
+        const englishNameDisplay = document.getElementById('english-name-display'); 
+        const questionPrompt = document.getElementById('question-prompt');
+        const countdownProgress = document.getElementById('countdown-progress');
+        const answerSection = document.getElementById('answer-section');
+        const chineseNameEl = document.getElementById('chinese-name');
+        const pinyinEl = document.getElementById('pinyin');
+        const nextButton = document.getElementById('next-button');
+
+        // --- 状态变量 ---
+        let currentFruitIndex = 0;
+        let countdownTimer = null;
+        const COUNTDOWN_SECONDS = 3;
+        const WORD_DISPLAY_DELAY_MS = 500; // 英文单词显示后 0.5 秒再展示图片
+
+        // --- 核心逻辑函数 ---
+
+        /**
+         * @function startCountdown
+         * 开始3秒倒计时，结束后揭示答案。
+         */
+        function startCountdown() {
+            // 确保按钮被禁用，防止多次点击
+            nextButton.disabled = true;
+            nextButton.textContent = "Guessing...";
+            
+            // 初始化进度条
+            countdownProgress.style.width = '100%';
+            countdownProgress.style.transition = `width ${COUNTDOWN_SECONDS}s linear`;
+
+            // 倒计时动画开始（通过延时触发CSS transition）
+            setTimeout(() => {
+                countdownProgress.style.width = '0%';
+            }, 50); 
+            
+            // 倒计时逻辑
+            countdownTimer = setTimeout(revealAnswer, COUNTDOWN_SECONDS * 1000);
+        }
+        
+        /**
+         * @function revealAnswer
+         * 揭示中文名称和拼音。
+         */
+        function revealAnswer() {
+            // 清除计时器以防万一
+            clearTimeout(countdownTimer);
+            
+            // 恢复进度条状态
+            countdownProgress.style.transition = 'none';
+            countdownProgress.style.width = '100%';
+
+            // 显示答案
+            answerSection.classList.add('revealed');
+            answerSection.classList.remove('reveal-text');
+            
+            // 更新按钮状态
+            nextButton.disabled = false;
+            nextButton.textContent = "Next Fruit (下一个)";
+            
+            // 视觉提示: 答案揭晓时，问题也更新为双语
+            questionPrompt.textContent = "This is | 这是";
+            questionPrompt.classList.add('text-green-600');
+            questionPrompt.classList.remove('text-gray-700');
+        }
+
+        /**
+         * @function showImageAndStartQuiz
+         * 0.5秒延迟后执行：显示图片并开始倒计时。
+         * @param {object} currentFruit - 当前水果数据对象
+         */
+        function showImageAndStartQuiz(currentFruit) {
+            // 显示图片，淡入效果
+            fruitImage.classList.remove('image-hidden');
+            fruitImage.classList.add('image-shown');
+            
+            // 英文单词保持可见
+            
+            // 开始倒计时
+            startCountdown();
+        }
+
+        /**
+         * @function loadFruit
+         * 加载当前索引的水果数据并重置UI。
+         */
+        function loadFruit() {
+            if (currentFruitIndex >= fruitsData.length) {
+                // 所有水果都已学习完毕
+                fruitImage.src = "https://placehold.co/400x225/4CAF50/FFFFFF?text=Challenge+Complete";
+                fruitImage.classList.remove('image-hidden');
+                englishNameDisplay.textContent = "Congratulations!";
+                englishNameDisplay.classList.remove('opacity-0'); // 确保结束时可见
+                questionPrompt.textContent = "You finished the challenge!";
+                chineseNameEl.textContent = "挑战成功！";
+                pinyinEl.textContent = "tiǎo zhàn chéng gōng!";
+                answerSection.classList.add('revealed');
+                nextButton.disabled = true;
+                nextButton.textContent = "Finished";
+                return;
+            }
+
+            const currentFruit = fruitsData[currentFruitIndex];
+            
+            // --- 1. 重置UI状态 ---
+            clearTimeout(countdownTimer);
+            
+            // 隐藏图片和答案
+            fruitImage.classList.remove('image-shown');
+            fruitImage.classList.add('image-hidden');
+            answerSection.classList.remove('revealed');
+            answerSection.classList.add('reveal-text');
+
+            // 重置问题为双语
+            questionPrompt.textContent = "What is this? | 这是什么？";
+            questionPrompt.classList.remove('text-green-600');
+            questionPrompt.classList.add('text-gray-700');
+
+            nextButton.disabled = true;
+            nextButton.textContent = "Guessing...";
+
+            // 重置进度条到100% (为了平滑过渡，先重置CSS transition)
+            countdownProgress.style.transition = 'none';
+            countdownProgress.style.width = '100%';
+            
+            // --- 2. 核心步骤：先显示英文单词 ---
+            
+            // 重新设置图片源，但图片是隐藏的
+            fruitImage.src = currentFruit.img;
+            
+            // A. 显示英文单词（确保它一直可见）
+            englishNameDisplay.textContent = currentFruit.en;
+            englishNameDisplay.classList.remove('opacity-0');
+            
+            chineseNameEl.textContent = currentFruit.cn;
+            pinyinEl.textContent = currentFruit.pinyin;
+
+            // B. 延迟后显示图片并开始倒计时
+            setTimeout(() => showImageAndStartQuiz(currentFruit), WORD_DISPLAY_DELAY_MS);
+        }
+
+        /**
+         * @function handleNextClick
+         * 处理“下一个”按钮点击事件。
+         */
+        function handleNextClick() {
+            if (answerSection.classList.contains('revealed')) {
+                currentFruitIndex++;
+                loadFruit();
+            } else {
+                // 如果用户在倒计时中途点击，直接揭示答案
+                revealAnswer();
+            }
+        }
+
+        // --- 事件监听器 ---
+        nextButton.addEventListener('click', handleNextClick);
+
+        // --- 初始化应用 ---
+        window.onload = loadFruit;
+        
+        // --- 语音/文字生成示例 (可选的未来功能) ---
+        // 建议：在 revealAnswer() 中调用 TTS API 来播放中文发音。
+        
+        /* function base64ToArrayBuffer(base64) { ... }
+        function pcmToWav(pcm16, sampleRate) { ... }
+        
+        async function fetchTts(textToSpeak) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            // ... TTS API call logic ...
+        }
+        */
+
+    </script>
+</body>
+</html>
